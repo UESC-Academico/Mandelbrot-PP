@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <omp.h>
 
@@ -40,6 +41,21 @@ int main(int argc, char *argv[])
     int max_iter = 1000;
     double re_min = -2.0, re_max = 1.0;
     double im_min = -1.5, im_max = 1.5;
+
+    if (argc > 1)
+    {
+        width = atoi(argv[1]);
+        height = width;
+    }
+
+    if (argc > 2 && strcmp(argv[2], "desbalanceamento") == 0)
+    {
+        max_iter = 5000;
+        re_min = -0.745143887;
+        re_max = -0.742143887;
+        im_min = 0.130325904;
+        im_max = 0.133325904;
+    }
 
     // Alocação de memória para a matriz de pixels
     int *matriz = (int *)malloc((size_t)width * height * sizeof(int));
@@ -83,7 +99,12 @@ int main(int argc, char *argv[])
             int r = (n * 2) % 256;
             int g = (n * 4) % 256;
             int b = (n * 13) % 256;
-            if (n == max_iter) { r = g = b = 0; }
+
+            if (n == max_iter) 
+            { 
+                r = g = b = 0; 
+            }
+
             fprintf(fppm, "%d %d %d ", r, g, b);
         }
         fclose(fppm);
