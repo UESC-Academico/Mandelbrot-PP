@@ -15,8 +15,8 @@ double get_time()
 // Função que calcula o número de iterações para o conjunto de Mandelbrot
 int mandelbrot(int x, int y, int width, int height, int max_iter, double re_min, double re_max, double im_min, double im_max)
 {
-    double cReal = re_min + ((re_max - re_min) * x) / width;
-    double cImaginary = im_min + ((im_max - im_min) * y) / height;
+    double cReal = re_min + ((re_max - re_min) * x) / (width - 1.0);
+    double cImaginary = im_min + ((im_max - im_min) * y) / (height - 1.0);
 
     double zReal = 0.0, zImaginary = 0.0;
     double zReal2 = 0.0, zImaginary2 = 0.0;
