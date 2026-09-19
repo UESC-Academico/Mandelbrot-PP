@@ -4,14 +4,6 @@
 #include <sys/time.h>
 #include <omp.h>
 
-//Função que mede o tempo em segundos
-double get_time()
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return tv.tv_sec + tv.tv_usec * 1e-6;
-}
-
 // Função que calcula o número de iterações para o conjunto de Mandelbrot
 int mandelbrot(int x, int y, int width, int height, int max_iter, double re_min, double re_max, double im_min, double im_max)
 {
@@ -65,10 +57,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Início do cronômetro 
-    double t_inicio = get_time();
+    // Início do cronômetro com o timer do OpenMP (mais preciso para threads)
+    double t_inicio = omp_get_wtime();
 
-    // Cálculo do conjunto de Mandelbrot
+    // Paralelização do loop externo
+    // collapse(1) ou padrão paralela as linhas (y)
+    #pragma omp parallel for schedule(runtime)
     for (int y = 0; y < height; y++) 
     {
         for (int x = 0; x < width; x++) 
@@ -78,8 +72,7 @@ int main(int argc, char *argv[])
     }
 
     // Fim do cronômetro
-    double t_fim = get_time();
-
+    double t_fim = omp_get_wtime();
     printf("Tempo de execucao: %f segundos\n", t_fim - t_inicio);
 
     // Salvar Arquivo Binário
