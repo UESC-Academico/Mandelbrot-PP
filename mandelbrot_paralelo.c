@@ -4,6 +4,36 @@
 #include <sys/time.h>
 #include <omp.h>
 
+typedef struct
+{
+    double max;
+    double min;
+    double media;
+} Statistics;
+
+// Função que calcula o máximo, mínimo e média de um vetor de doubles
+static Statistics get_statistics(const double *v, int n)
+{
+    Statistics s = {
+        v[0],
+        v[0],
+        0.0
+    };
+
+    for (int i = 0; i < n; i++)
+    {
+        if (v[i] > s.max)
+            s.max = v[i];
+
+        if (v[i] < s.min)
+            s.min = v[i];
+
+        s.media += v[i];
+    }
+    s.media /= n;
+    return s;
+}
+
 // Função que calcula o número de iterações para o conjunto de Mandelbrot
 int mandelbrot(int x, int y, int width, int height, int max_iter, double re_min, double re_max, double im_min, double im_max)
 {
@@ -57,23 +87,76 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Início do cronômetro com o timer do OpenMP (mais preciso para threads)
-    double t_inicio = omp_get_wtime();
+    int max_threads = omp_get_max_threads();
+
+    // Alocação de vetores para métricas de cada thread
+    long long *pixels_per_thr = (long long *)calloc(max_threads, sizeof(long long));
+    long long *iter_per_thr = (long long *)calloc(max_threads, sizeof(long long));
+    double *time_per_thr = (double *)calloc(max_threads, sizeof(double));
+
+    if (!pixels_per_thr || !iter_per_thr || !time_per_thr)
+    {
+        printf("Erro de alocacao das metricas.\n");
+        free(matriz);
+        return 1;
+    }
+
+    int nthreads = 1;
+
+    // Início do cronômetro com o timer do OpenMP 
+    double start_t = omp_get_wtime();
 
     // Paralelização do loop externo
-    // collapse(1) ou padrão paralela as linhas (y)
-    #pragma omp parallel for schedule(runtime)
-    for (int y = 0; y < height; y++) 
+    #pragma omp parallel
     {
-        for (int x = 0; x < width; x++) 
+        int tid = omp_get_thread_num();
+
+        #pragma omp single
         {
-            matriz[y * width + x] = mandelbrot(x, y, width, height, max_iter, re_min, re_max, im_min, im_max);
+            nthreads = omp_get_num_threads();
         }
+
+        long long p_thread = 0;
+        long long i_thread = 0;
+        double t_thread = 0.0;
+
+        #pragma omp for schedule(runtime)
+        for (int y = 0; y < height; y++) 
+        {
+            double t0 = omp_get_wtime();
+            for (int x = 0; x < width; x++) 
+            {
+                int n = mandelbrot(x, y, width, height, max_iter, re_min, re_max, im_min, im_max);
+                matriz[y * width + x] = n;
+
+                p_thread++;
+                i_thread += n;
+            }
+            t_thread += omp_get_wtime() - t0;
+        }
+
+        pixels_per_thr[tid] = p_thread;
+        iter_per_thr[tid] = i_thread;
+        time_per_thr[tid] = t_thread;
     }
 
     // Fim do cronômetro
-    double t_fim = omp_get_wtime();
-    printf("Tempo de execucao: %f segundos\n", t_fim - t_inicio);
+    double end_t = omp_get_wtime();
+    double total_time = end_t - start_t;
+    printf("Tempo de execucao: %f segundos\n", total_time);
+
+    double *iter_per_thr_double = (double *)malloc(nthreads * sizeof(double));
+    double *pixels_per_thr_double = (double *)malloc(nthreads * sizeof(double));
+    for (int i = 0; i < nthreads; i++) 
+    {
+        iter_per_thr_double[i] = (double)iter_per_thr[i];
+        pixels_per_thr_double[i] = (double)pixels_per_thr[i];
+    }
+
+    Statistics iter_stats = get_statistics(iter_per_thr_double, nthreads);
+    Statistics pixels_stats = get_statistics(pixels_per_thr_double, nthreads);
+    Statistics time_stats = get_statistics(time_per_thr, nthreads);
+
 
     // Salvar Arquivo Binário
     FILE *fbin = fopen("mandelbrot_matriz.bin", "wb");
