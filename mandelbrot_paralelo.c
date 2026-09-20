@@ -165,7 +165,16 @@ void save_statistics(const char *filename,
 
     fprintf(ftxt, "\n%-28s %14s %16s %14s\n", "METRICA", "Pixels", "Iteracoes", "Tempo");
     
-    fprintf(ftxt, "%-28s %14.4f %16.4f %14.4f\n", "Fator Desbal. (max/media)", 
+    fprintf(ftxt, "%-28s %14.0f %16.0f %14.6f\n", "Maximo", 
+            pixels_stats.max, iter_stats.max, time_stats.max);
+            
+    fprintf(ftxt, "%-28s %14.0f %16.0f %14.6f\n", "Minimo", 
+            pixels_stats.min, iter_stats.min, time_stats.min);
+            
+    fprintf(ftxt, "%-28s %14.2f %16.2f %14.6f\n", "Media", 
+            pixels_stats.media, iter_stats.media, time_stats.media);
+
+    fprintf(ftxt, "%-28s %14.4f %16.4f %14.4f\n", "Fator de Balanceamento (max/media)", 
             pixels_stats.max / pixels_stats.media, 
             iter_stats.max / iter_stats.media, 
             time_stats.max / time_stats.media);
