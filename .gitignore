@@ -1,3 +1,6 @@
 *.exe
+*.bin
 *.ppm
 *.txt
+mandelbrot_sequencial
+mandelbrot_paralelo
