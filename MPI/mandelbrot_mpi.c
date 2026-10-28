@@ -152,7 +152,18 @@ int main(int argc, char *argv[])
                            &time_stats);
 
         double comm_time   = comm_time_per_proc[0];
-        double master_time = (strategy == STRAT_DYNAMIC && size > 1) ? comm_time_per_proc[0] : 0.0;
+        double master_time = 0.0;
+
+        if (strategy == STRAT_DYNAMIC && size > 1)
+        {
+            master_time = comm_time_per_proc[0];
+            double sum_worker_comm = 0.0;
+            for (int r = 1; r < size; r++)
+            {
+                sum_worker_comm += comm_time_per_proc[r];
+            }
+            comm_time = sum_worker_comm / (size - 1);
+        }
 
         const char *strategy_names[] = { "block", "cyclic", "dynamic" };
         char filename_stats[120];
