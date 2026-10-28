@@ -6,6 +6,8 @@ import re
 import subprocess
 import sys
 
+RESULTS_DIR = "Results/OpenMP/CSV"
+
 
 def parse_time(output):
     match = re.search(r"Tempo de execucao:\s*([0-9.]+)", output)
@@ -52,7 +54,7 @@ def run_openmp(width=4096, mode="normal", threads=12, schedule="dynamic", chunk=
 
 
 def main():
-    os.makedirs("Results", exist_ok=True)
+    os.makedirs(RESULTS_DIR, exist_ok=True)
     max_threads = os.cpu_count() or 4
     thread_list = [t for t in [1, 2, 4, 6, 8, 12, 16] if t <= max_threads]
     if max_threads not in thread_list:
@@ -77,7 +79,7 @@ def main():
     # 2. Casos de Teste Schedule / Chunk
     print(f"\n=== 2. CASOS DE TESTE SCHEDULE/CHUNK (4096x4096, {max_threads} threads) ===")
     print(f"{'Schedule':<10} {'Chunk':<8} {'Tempo (s)':>12} {'Speedup':>10} {'Eficiencia (%)':>16} {'Fator (max/avg)':>17} {'FBC':>12}")
-    with open("Results/resumo_schedule_chunk.csv", "w", newline="") as f_out:
+    with open(f"{RESULTS_DIR}/resumo_schedule_chunk.csv", "w", newline="") as f_out:
         writer = csv.writer(f_out)
         writer.writerow(["schedule", "chunk", "threads", "tempo", "tempo_serial", "speedup", "eficiencia", "time_min", "time_avg", "time_max", "fator_max_avg", "fbc"])
         for sched, ch in configs:
@@ -97,7 +99,7 @@ def main():
     # 3. Escalabilidade Forte
     print("\n=== 3. ESCALABILIDADE FORTE (4096x4096, dynamic,1) ===")
     print(f"{'Threads':<8} {'Tempo (s)':>12} {'Speedup':>10} {'Eficiencia (%)':>16} {'Fator (max/avg)':>17} {'FBC':>12}")
-    with open("Results/resumo_escalabilidade_forte.csv", "w", newline="") as f_out:
+    with open(f"{RESULTS_DIR}/resumo_escalabilidade_forte.csv", "w", newline="") as f_out:
         writer = csv.writer(f_out)
         writer.writerow(["threads", "tempo", "tempo_serial", "speedup", "eficiencia", "time_min", "time_avg", "time_max", "fator_max_avg", "fbc"])
         for th in thread_list:
@@ -118,7 +120,7 @@ def main():
     t_serial_desbal = run_serial(4096, "desbalanceamento")
     print(f"Tempo Serial (Desbalanceamento 4096): {t_serial_desbal:.6f} s")
     print(f"{'Schedule':<10} {'Chunk':<8} {'Tempo (s)':>12} {'Speedup':>10} {'Eficiencia (%)':>16} {'Fator (max/avg)':>17} {'FBC':>12}")
-    with open("Results/resumo_desbalanceamento.csv", "w", newline="") as f_out:
+    with open(f"{RESULTS_DIR}/resumo_desbalanceamento.csv", "w", newline="") as f_out:
         writer = csv.writer(f_out)
         writer.writerow(["schedule", "chunk", "threads", "tempo", "tempo_serial", "speedup", "eficiencia", "time_min", "time_avg", "time_max", "fator_max_avg", "fbc"])
         for sched, ch in configs:
@@ -139,7 +141,7 @@ def main():
     if "--skip-weak" not in sys.argv:
         print("\n=== 5. ESCALABILIDADE FRACA (dynamic,1) ===")
         print(f"{'Resolucao':<10} {'Threads':<8} {'Tempo Serial (s)':>18} {'Tempo Paral. (s)':>18} {'Speedup':>10} {'Eficiencia (%)':>16} {'Fator (max/avg)':>17} {'FBC':>12}")
-        with open("Results/resumo_escalabilidade_fraca.csv", "w", newline="") as f_out:
+        with open(f"{RESULTS_DIR}/resumo_escalabilidade_fraca.csv", "w", newline="") as f_out:
             writer = csv.writer(f_out)
             writer.writerow(["resolucao", "threads", "tempo_paralelo", "tempo_serial", "speedup", "eficiencia", "time_min", "time_avg", "time_max", "fator_max_avg", "fbc"])
             for th in thread_list:
