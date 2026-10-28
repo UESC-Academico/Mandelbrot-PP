@@ -25,7 +25,7 @@ void save_binary(const char *filename, int *matrix, int width, int height)
 // Função que salva a matriz de pixels em um arquivo PPM
 void save_image(const char *filename, int *matrix, int width, int height, int max_iter)
 {
-    if (getenv("SKIP_IO"))
+    if (getenv("SKIP_IO") || getenv("SKIP_PPM"))
     {
         return;
     }
