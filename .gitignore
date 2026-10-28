@@ -4,4 +4,5 @@
 *.txt
 *.csv
 mandelbrot_sequencial
-mandelbrot_paralelo
+mandelbrot_openmp
+mandelbrot_mpi
