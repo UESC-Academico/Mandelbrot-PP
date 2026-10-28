@@ -24,6 +24,6 @@ mpi: $(MPI_SRC) $(COMMON_SRC)
 	$(MPICC) $(CFLAGS) $(MPI_SRC) $(COMMON_SRC) -o $(MPI_BIN)
 
 clean:
-	rm -f $(SERIAL_BIN) $(OPENMP_BIN) $(MPI_BIN) *.exe *.bin *.ppm *.txt *.csv Results/*.csv
+	rm -f $(SERIAL_BIN) $(OPENMP_BIN) $(MPI_BIN) *.exe *.bin *.ppm *.txt *.csv Results/OpenMP/*.csv Results/MPI/*.csv
 
 .PHONY: all serial openmp mpi clean

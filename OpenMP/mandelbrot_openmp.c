@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 
     char filename_stats[120];
     snprintf(filename_stats, sizeof(filename_stats),
-             "Results/estatisticas_%s_%d_threads_%d.csv",
+             "Results/OpenMP/CSV/estatisticas_%s_%d_threads_%d.csv",
              schedule_names[k], chunk, nthreads);
 
     save_statistics(filename_stats, schedule_names[k], chunk, nthreads,

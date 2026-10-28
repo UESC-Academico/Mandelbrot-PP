@@ -3,6 +3,8 @@
 *.ppm
 *.txt
 *.csv
+*.png
+*.tex
 mandelbrot_sequencial
 mandelbrot_openmp
 mandelbrot_mpi

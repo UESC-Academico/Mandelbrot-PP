@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
         const char *strategy_names[] = { "block", "cyclic", "dynamic" };
         char filename_stats[120];
         snprintf(filename_stats, sizeof(filename_stats),
-                 "Results/estatisticas_mpi_%s_%d_np_%d.csv",
+                 "Results/MPI/CSV/estatisticas_mpi_%s_%d_np_%d.csv",
                  strategy_names[strategy], chunk, size);
 
         save_statistics(filename_stats, strategy_names[strategy], chunk, size,
