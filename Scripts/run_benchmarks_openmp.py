@@ -145,7 +145,7 @@ def main():
             writer = csv.writer(f_out)
             writer.writerow(["resolucao", "threads", "tempo_paralelo", "tempo_serial", "speedup", "eficiencia", "time_min", "time_avg", "time_max", "fator_max_avg", "fbc"])
             for th in thread_list:
-                res_w = int(round(4096 * math.sqrt(th)))
+                res_w = round(4096 * math.sqrt(th))
                 t_ser = t_serial_normal if res_w == 4096 else run_serial(res_w, "normal")
                 row = run_openmp(res_w, "normal", threads=th, schedule="dynamic", chunk=1)
                 t_par = float(row["total_time"])

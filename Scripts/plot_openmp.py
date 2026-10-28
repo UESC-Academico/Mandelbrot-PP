@@ -1,5 +1,6 @@
 import csv
 import os
+
 import matplotlib.pyplot as plt
 
 CSV_DIR = "Results/OpenMP/CSV"
@@ -202,7 +203,6 @@ def plot_schedule_suite(rows, prefix, subfolder, title_suffix, is_desbal=False):
             st = STYLE_SCHED[s]
             ax.plot(xs, ys, label=st["label"], color=st["color"], marker=st["marker"], lw=1.3, markersize=6)
 
-    ax.axhline(t_serial, color="#d62728", linestyle="--", lw=1.2, label=f"Serial: {t_serial:.4f} s")
     ax.set_xticks(range(len(x_labels)))
     ax.set_xticklabels(x_labels)
     ax.set_xlabel("Tamanho do chunk", fontsize=11)
@@ -355,19 +355,17 @@ def plot_strong_scaling(rows):
     speedups = [float(r["speedup"]) for r in rows]
     efics = [float(r["eficiencia"]) for r in rows]
     fatores = [float(r["fator_max_avg"]) for r in rows]
-    t_serial = float(rows[0]["tempo_serial"])
 
     # 1. Tempo de Execucao
     fig, ax = plt.subplots(figsize=(6.2, 4.2))
     ax.plot(threads, tempos, label="Paralelo - dynamic,1", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.axhline(t_serial, color="#d62728", linestyle="--", lw=1.2, label=f"Serial: {t_serial:.4f} s")
     ax.set_xticks(threads)
     ax.set_xlabel("Número de threads", fontsize=11)
     ax.set_ylabel("Tempo de execução (s)", fontsize=11)
     ax.set_title("Escalabilidade Forte - Tempo de Execução", fontweight="bold", fontsize=11.5, pad=10)
     ax.set_ylim(bottom=0)
     ax.grid(True)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=2, edgecolor="black", fancybox=False)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=1, edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_forte_tempo.png", bbox_inches="tight")
     plt.close(fig)
 
