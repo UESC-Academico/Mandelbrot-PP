@@ -24,9 +24,9 @@ void save_statistics(const char *filename,
         return;
     }
 
-    double pixels_bal = pixels_stats.media > 0.0 ? pixels_stats.max / pixels_stats.media : 0.0;
-    double iter_bal   = iter_stats.media > 0.0 ? iter_stats.max / iter_stats.media : 0.0;
-    double time_bal   = time_stats.media > 0.0 ? time_stats.max / time_stats.media : 0.0;
+    double pixels_bal = pixels_stats.avg > 0.0 ? pixels_stats.max / pixels_stats.avg : 0.0;
+    double iter_bal   = iter_stats.avg > 0.0 ? iter_stats.max / iter_stats.avg : 0.0;
+    double time_bal   = time_stats.avg > 0.0 ? time_stats.max / time_stats.avg : 0.0;
 
     double pixels_ratio = pixels_stats.min > 0.0 ? pixels_stats.max / pixels_stats.min : -1.0;
     double iter_ratio   = iter_stats.min > 0.0 ? iter_stats.max / iter_stats.min : -1.0;
@@ -34,9 +34,9 @@ void save_statistics(const char *filename,
 
     fprintf(fcsv,
             "width,height,threads,schedule,chunk,total_time,"
-            "time_min,time_media,time_max,time_fbc,time_max_media,time_max_min,"
-            "pixels_min,pixels_media,pixels_max,pixels_fbc,pixels_max_media,pixels_max_min,"
-            "iter_min,iter_media,iter_max,iter_fbc,iter_max_media,iter_max_min\n");
+            "time_min,time_avg,time_max,time_fbc,time_max_avg,time_max_min,"
+            "pixels_min,pixels_avg,pixels_max,pixels_fbc,pixels_max_avg,pixels_max_min,"
+            "iter_min,iter_avg,iter_max,iter_fbc,iter_max_avg,iter_max_min\n");
 
     fprintf(fcsv,
             "%d,%d,%d,%s,%d,%.6f,"
@@ -44,9 +44,9 @@ void save_statistics(const char *filename,
             "%.0f,%.2f,%.0f,%.6f,%.6f,%.6f,"
             "%.0f,%.2f,%.0f,%.6f,%.6f,%.6f\n",
             width, height, nthreads, schedule_name, chunk, total_time,
-            time_stats.min, time_stats.media, time_stats.max, time_stats.fbc, time_bal, time_ratio,
-            pixels_stats.min, pixels_stats.media, pixels_stats.max, pixels_stats.fbc, pixels_bal, pixels_ratio,
-            iter_stats.min, iter_stats.media, iter_stats.max, iter_stats.fbc, iter_bal, iter_ratio);
+            time_stats.min, time_stats.avg, time_stats.max, time_stats.fbc, time_bal, time_ratio,
+            pixels_stats.min, pixels_stats.avg, pixels_stats.max, pixels_stats.fbc, pixels_bal, pixels_ratio,
+            iter_stats.min, iter_stats.avg, iter_stats.max, iter_stats.fbc, iter_bal, iter_ratio);
             
     fclose(fcsv);
     printf("Estatisticas salvas em: %s\n", filename);
@@ -54,15 +54,11 @@ void save_statistics(const char *filename,
 
 int main(int argc, char *argv[])
 {
-    // Parâmetros do conjunto de Mandelbrot
-    int width, height, max_iter;
-    double re_min, re_max, im_min, im_max;
+    MandelbrotParams params;
+    init_params(argc, argv, &params);
 
-    init_params(argc, argv, &width, &height, &max_iter, &re_min, &re_max, &im_min, &im_max);
-
-    // Alocação de memória para a matriz de pixels
-    int *matriz = (int *)malloc((size_t)width * height * sizeof(int));
-    if (!matriz) 
+    int *matrix = (int *)malloc((size_t)params.width * params.height * sizeof(int));
+    if (!matrix) 
     {
         printf("Erro de alocacao de memoria.\n");
         return 1;
@@ -70,24 +66,20 @@ int main(int argc, char *argv[])
 
     int max_threads = omp_get_max_threads();
 
-    // Alocação de vetores para métricas de cada thread
     long long *pixels_per_thr = (long long *)calloc(max_threads, sizeof(long long));
-    long long *iter_per_thr = (long long *)calloc(max_threads, sizeof(long long));
-    double *time_per_thr = (double *)calloc(max_threads, sizeof(double));
+    long long *iter_per_thr   = (long long *)calloc(max_threads, sizeof(long long));
+    double *time_per_thr      = (double *)calloc(max_threads, sizeof(double));
 
     if (!pixels_per_thr || !iter_per_thr || !time_per_thr)
     {
         printf("Erro de alocacao das metricas.\n");
-        free(matriz);
+        free(matrix);
         return 1;
     }
 
     int nthreads = 1;
-
-    // Início do cronômetro com o timer do OpenMP 
     double start_t = omp_get_wtime();
 
-    // Cálculo do conjunto de Mandelbrot em paralelo
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
@@ -102,13 +94,13 @@ int main(int argc, char *argv[])
         double t_thread = 0.0;
 
         #pragma omp for schedule(runtime)
-        for (int y = 0; y < height; y++) 
+        for (int y = 0; y < params.height; y++) 
         {
             double t0 = omp_get_wtime();
-            for (int x = 0; x < width; x++) 
+            for (int x = 0; x < params.width; x++) 
             {
-                int n = mandelbrot(x, y, width, height, max_iter, re_min, re_max, im_min, im_max);
-                matriz[y * width + x] = n;
+                int n = mandelbrot(x, y, &params);
+                matrix[y * params.width + x] = n;
 
                 p_thread++;
                 i_thread += n;
@@ -117,42 +109,42 @@ int main(int argc, char *argv[])
         }
 
         pixels_per_thr[tid] = p_thread;
-        iter_per_thr[tid] = i_thread;
-        time_per_thr[tid] = t_thread;
+        iter_per_thr[tid]   = i_thread;
+        time_per_thr[tid]   = t_thread;
     }
 
-    // Fim do cronômetro
     double end_t = omp_get_wtime();
     double total_time = end_t - start_t;
     printf("Tempo de execucao: %f segundos\n", total_time);
 
-    // Cálculo das estatísticas de máximo, mínimo e média para pixels, iterações e tempo por thread
     Statistics pixels_stats, iter_stats, time_stats;
     get_all_statistics(nthreads, pixels_per_thr, iter_per_thr, time_per_thr, 
                        &pixels_stats, &iter_stats, &time_stats);
 
     omp_sched_t kind; 
     int chunk;
-    omp_get_schedule(&kind, &chunk); // Obtém o tipo de escalonamento e o tamanho do chunk atual
+    omp_get_schedule(&kind, &chunk);
     
-    const char *nomes[] = { "desconhecido", "static", "dynamic", "guided", "auto" };
-    int k = (int)kind & 0xFF; // Máscara para obter apenas os bits relevantes
+    const char *schedule_names[] = { "unknown", "static", "dynamic", "guided", "auto" };
+    int k = (int)kind & 0xFF;
     if (k < 1 || k > 4) 
     {
-        k = 0; // Se não for um valor válido, define como "desconhecido"
+        k = 0;
     }
 
-    // Nome do arquivo de estatísticas baseado no tipo de escalonamento, tamanho do chunk e número de threads
     char filename_stats[120];
-    snprintf(filename_stats, sizeof(filename_stats), "Results/estatisticas_%s_%d_threads_%d.csv", nomes[k], chunk, nthreads);
+    snprintf(filename_stats, sizeof(filename_stats),
+             "Results/estatisticas_%s_%d_threads_%d.csv",
+             schedule_names[k], chunk, nthreads);
 
-    save_statistics(filename_stats, nomes[k], chunk, nthreads, width, height, total_time,
+    save_statistics(filename_stats, schedule_names[k], chunk, nthreads,
+                    params.width, params.height, total_time,
                     pixels_stats, iter_stats, time_stats);
     
-    save_binary("mandelbrot_paralelo_matriz.bin", matriz, width, height);
-    save_image("mandelbrot.ppm", matriz, width, height, max_iter);
+    save_binary("mandelbrot_paralelo_matriz.bin", matrix, params.width, params.height);
+    save_image("mandelbrot.ppm", matrix, params.width, params.height, params.max_iter);
 
-    free(matriz);
+    free(matrix);
     free(pixels_per_thr);
     free(iter_per_thr);
     free(time_per_thr);
