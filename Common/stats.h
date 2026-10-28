@@ -5,7 +5,7 @@ typedef struct
 {
     double max;
     double min;
-    double media;
+    double avg;
     double fbc;
 } Statistics;
 

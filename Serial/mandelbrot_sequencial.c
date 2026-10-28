@@ -14,41 +14,34 @@ double get_time()
 
 int main(int argc, char *argv[])
 {
-    // Parâmetros do conjunto de Mandelbrot
-    int width, height, max_iter;
-    double re_min, re_max, im_min, im_max;
+    MandelbrotParams params;
+    init_params(argc, argv, &params);
 
-    init_params(argc, argv, &width, &height, &max_iter, &re_min, &re_max, &im_min, &im_max);
-
-    // Alocação de memória para a matriz de pixels
-    int *matriz = (int *)malloc((size_t)width * height * sizeof(int));
-    if (!matriz) 
+    int *matrix = (int *)malloc((size_t)params.width * params.height * sizeof(int));
+    if (!matrix) 
     {
         printf("Erro de alocacao de memoria.\n");
         return 1;
     }
 
-    // Início do cronômetro 
-    double t_inicio = get_time();
+    double start_t = get_time();
 
-    // Cálculo do conjunto de Mandelbrot
-    for (int y = 0; y < height; y++) 
+    for (int y = 0; y < params.height; y++) 
     {
-        for (int x = 0; x < width; x++) 
+        for (int x = 0; x < params.width; x++) 
         {
-            matriz[y * width + x] = mandelbrot(x, y, width, height, max_iter, re_min, re_max, im_min, im_max);
+            matrix[y * params.width + x] = mandelbrot(x, y, &params);
         }
     }
 
-    // Fim do cronômetro
-    double t_fim = get_time();
+    double end_t = get_time();
 
-    printf("Tempo de execucao: %f segundos\n", t_fim - t_inicio);
+    printf("Tempo de execucao: %f segundos\n", end_t - start_t);
 
-    save_binary("mandelbrot_matriz.bin", matriz, width, height);
-    save_image("mandelbrot.ppm", matriz, width, height, max_iter);
+    save_binary("mandelbrot_matriz.bin", matrix, params.width, params.height);
+    save_image("mandelbrot.ppm", matrix, params.width, params.height, params.max_iter);
 
-    free(matriz);
+    free(matrix);
 
     return 0;
 }

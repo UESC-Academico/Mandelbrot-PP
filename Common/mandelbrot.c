@@ -3,59 +3,43 @@
 #include "mandelbrot.h"
 
 // Função que inicializa os parâmetros do conjunto de Mandelbrot
-void init_params(int argc, 
-                 char *argv[], 
-                 int *width, 
-                 int *height, 
-                 int *max_iter, 
-                 double *re_min, 
-                 double *re_max, 
-                 double *im_min, 
-                 double *im_max)
+void init_params(int argc, char *argv[], MandelbrotParams *params)
 {
-    *width = 4096;
-    *height = 4096;
-    *max_iter = 1000;
-    *re_min = -2.0;
-    *re_max = 1.0;
-    *im_min = -1.5;
-    *im_max = 1.5;
+    params->width    = 4096;
+    params->height   = 4096;
+    params->max_iter = 1000;
+    params->re_min   = -2.0;
+    params->re_max   = 1.0;
+    params->im_min   = -1.5;
+    params->im_max   = 1.5;
 
     if (argc > 1)
     {
-        *width = atoi(argv[1]);
-        *height = *width;
+        params->width  = atoi(argv[1]);
+        params->height = params->width;
     }
 
     if (argc > 2 && strcmp(argv[2], "desbalanceamento") == 0)
     {
-        *max_iter = 5000;
-        *re_min = -0.745143887;
-        *re_max = -0.742143887;
-        *im_min = 0.130325904;
-        *im_max = 0.133325904;
+        params->max_iter = 5000;
+        params->re_min   = -0.745143887;
+        params->re_max   = -0.742143887;
+        params->im_min   = 0.130325904;
+        params->im_max   = 0.133325904;
     }
 }
 
 // Função que calcula o número de iterações para o conjunto de Mandelbrot
-int mandelbrot(int x, 
-               int y, 
-               int width, 
-               int height, 
-               int max_iter, 
-               double re_min, 
-               double re_max, 
-               double im_min, 
-               double im_max)
+int mandelbrot(int x, int y, const MandelbrotParams *params)
 {
-    double cReal = re_min + ((re_max - re_min) * x) / (width - 1.0);
-    double cImaginary = im_min + ((im_max - im_min) * y) / (height - 1.0);
+    double cReal = params->re_min + ((params->re_max - params->re_min) * x) / (params->width - 1.0);
+    double cImaginary = params->im_min + ((params->im_max - params->im_min) * y) / (params->height - 1.0);
 
     double zReal = 0.0, zImaginary = 0.0;
     double zReal2 = 0.0, zImaginary2 = 0.0;
     int n = 0;
 
-    while ((zReal2 + zImaginary2 <= 4.0) && (n < max_iter)) 
+    while ((zReal2 + zImaginary2 <= 4.0) && (n < params->max_iter)) 
     {
         zImaginary = 2.0 * zReal * zImaginary + cImaginary;
         zReal = zReal2 - zImaginary2 + cReal;

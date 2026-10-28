@@ -11,15 +11,15 @@ void get_all_statistics(int n,
 {
     s_pixels->max = (double)pixels[0]; 
     s_pixels->min = (double)pixels[0]; 
-    s_pixels->media = 0.0;
+    s_pixels->avg = 0.0;
 
     s_iters->max  = (double)iters[0];  
     s_iters->min  = (double)iters[0];  
-    s_iters->media  = 0.0;
+    s_iters->avg  = 0.0;
 
     s_times->max  = times[0];          
     s_times->min  = times[0];          
-    s_times->media  = 0.0;
+    s_times->avg  = 0.0;
 
     for (int i = 0; i < n; i++)
     {
@@ -29,20 +29,20 @@ void get_all_statistics(int n,
 
         if (p > s_pixels->max) s_pixels->max = p;
         if (p < s_pixels->min) s_pixels->min = p;
-        s_pixels->media += p;
+        s_pixels->avg += p;
 
         if (it > s_iters->max) s_iters->max = it;
         if (it < s_iters->min) s_iters->min = it;
-        s_iters->media += it;
+        s_iters->avg += it;
 
         if (t > s_times->max) s_times->max = t;
         if (t < s_times->min) s_times->min = t;
-        s_times->media += t;
+        s_times->avg += t;
     }
 
-    s_pixels->media /= n;
-    s_iters->media /= n;
-    s_times->media /= n;
+    s_pixels->avg /= n;
+    s_iters->avg /= n;
+    s_times->avg /= n;
 
     s_pixels->fbc = s_pixels->max > 0.0 ? (s_pixels->max - s_pixels->min) / s_pixels->max : 0.0;
     s_iters->fbc  = s_iters->max > 0.0 ? (s_iters->max - s_iters->min) / s_iters->max : 0.0;
