@@ -18,6 +18,6 @@ openmp: $(OPENMP_SRC) $(COMMON_SRC)
 	$(CC) $(CFLAGS) $(OMPFLAGS) $(OPENMP_SRC) $(COMMON_SRC) -o $(OPENMP_BIN)
 
 clean:
-	rm -f $(SERIAL_BIN) $(OPENMP_BIN) *.exe *.bin *.ppm *.txt
+	rm -f $(SERIAL_BIN) $(OPENMP_BIN) *.exe *.bin *.ppm *.txt *.csv Results/*.csv
 
 .PHONY: all serial openmp clean

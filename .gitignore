@@ -2,5 +2,6 @@
 *.bin
 *.ppm
 *.txt
+*.csv
 mandelbrot_sequencial
 mandelbrot_paralelo

@@ -5,6 +5,53 @@
 #include "../Common/io.h"
 #include "../Common/stats.h"
 
+// Função que salva o relatório de estatísticas em formato CSV
+void save_statistics(const char *filename, 
+                     const char *schedule_name, 
+                     int chunk, 
+                     int nthreads, 
+                     int width, 
+                     int height, 
+                     double total_time,
+                     Statistics pixels_stats, 
+                     Statistics iter_stats, 
+                     Statistics time_stats)
+{
+    FILE *fcsv = fopen(filename, "w");
+    if (!fcsv)
+    {
+        printf("Erro ao abrir o arquivo para escrita: %s\n", filename);
+        return;
+    }
+
+    double pixels_bal = pixels_stats.media > 0.0 ? pixels_stats.max / pixels_stats.media : 0.0;
+    double iter_bal   = iter_stats.media > 0.0 ? iter_stats.max / iter_stats.media : 0.0;
+    double time_bal   = time_stats.media > 0.0 ? time_stats.max / time_stats.media : 0.0;
+
+    double pixels_ratio = pixels_stats.min > 0.0 ? pixels_stats.max / pixels_stats.min : -1.0;
+    double iter_ratio   = iter_stats.min > 0.0 ? iter_stats.max / iter_stats.min : -1.0;
+    double time_ratio   = time_stats.min > 0.0 ? time_stats.max / time_stats.min : -1.0;
+
+    fprintf(fcsv,
+            "width,height,threads,schedule,chunk,total_time,"
+            "time_min,time_media,time_max,time_fbc,time_max_media,time_max_min,"
+            "pixels_min,pixels_media,pixels_max,pixels_fbc,pixels_max_media,pixels_max_min,"
+            "iter_min,iter_media,iter_max,iter_fbc,iter_max_media,iter_max_min\n");
+
+    fprintf(fcsv,
+            "%d,%d,%d,%s,%d,%.6f,"
+            "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
+            "%.0f,%.2f,%.0f,%.6f,%.6f,%.6f,"
+            "%.0f,%.2f,%.0f,%.6f,%.6f,%.6f\n",
+            width, height, nthreads, schedule_name, chunk, total_time,
+            time_stats.min, time_stats.media, time_stats.max, time_stats.fbc, time_bal, time_ratio,
+            pixels_stats.min, pixels_stats.media, pixels_stats.max, pixels_stats.fbc, pixels_bal, pixels_ratio,
+            iter_stats.min, iter_stats.media, iter_stats.max, iter_stats.fbc, iter_bal, iter_ratio);
+            
+    fclose(fcsv);
+    printf("Estatisticas salvas em: %s\n", filename);
+}
+
 int main(int argc, char *argv[])
 {
     // Parâmetros do conjunto de Mandelbrot
@@ -96,11 +143,10 @@ int main(int argc, char *argv[])
     }
 
     // Nome do arquivo de estatísticas baseado no tipo de escalonamento, tamanho do chunk e número de threads
-    char filename_stats[100];
-    snprintf(filename_stats, sizeof(filename_stats), "estatisticas_%s_%d_threads_%d.txt", nomes[k], chunk, nthreads);
+    char filename_stats[120];
+    snprintf(filename_stats, sizeof(filename_stats), "Results/estatisticas_%s_%d_threads_%d.csv", nomes[k], chunk, nthreads);
 
     save_statistics(filename_stats, nomes[k], chunk, nthreads, width, height, total_time,
-                    pixels_per_thr, iter_per_thr, time_per_thr,
                     pixels_stats, iter_stats, time_stats);
     
     save_binary("mandelbrot_paralelo_matriz.bin", matriz, width, height);
