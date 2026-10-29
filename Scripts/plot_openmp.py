@@ -224,8 +224,7 @@ def plot_schedule_suite(rows, prefix, subfolder, title_suffix, is_desbal=False):
             st = STYLE_SCHED[s]
             ax.plot(xs, ys, label=st["label"], color=st["color"], marker=st["marker"], lw=1.3, markersize=6)
 
-    if not is_desbal:
-        ax.axhline(threads, color="#d62728", linestyle="--", lw=1.2, label=f"Ideal: {threads}")
+    ax.plot([], [], color="none", label=f"Ideal: {threads}")
     ax.set_xticks(range(len(x_labels)))
     ax.set_xticklabels(x_labels)
     ax.set_xlabel("Tamanho do chunk", fontsize=11)
@@ -233,10 +232,7 @@ def plot_schedule_suite(rows, prefix, subfolder, title_suffix, is_desbal=False):
     ax.set_title(f"Speedup - {title_suffix} ({threads} threads)", fontweight="bold", fontsize=11.5, pad=10)
     ax.set_ylim(bottom=0)
     ax.grid(True)
-    if is_desbal:
-        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=3, edgecolor="black", fancybox=False)
-    else:
-        ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", edgecolor="black", fancybox=False)
+    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_{prefix}_speedup.png", bbox_inches="tight")
     plt.close(fig)
 
@@ -250,13 +246,13 @@ def plot_schedule_suite(rows, prefix, subfolder, title_suffix, is_desbal=False):
             st = STYLE_SCHED[s]
             ax.plot(xs, ys, label=st["label"], color=st["color"], marker=st["marker"], lw=1.3, markersize=6)
 
-    ax.axhline(100.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 100%")
+    ax.plot([], [], color="none", label="Ideal: 100%")
     ax.set_xticks(range(len(x_labels)))
     ax.set_xticklabels(x_labels)
     ax.set_xlabel("Tamanho do chunk", fontsize=11)
     ax.set_ylabel("Eficiência paralela (%)", fontsize=11)
     ax.set_title(f"Eficiência - {title_suffix} ({threads} threads)", fontweight="bold", fontsize=11.5, pad=10)
-    ax.set_ylim(0, 105)
+    ax.set_ylim(bottom=0)
     ax.grid(True)
     ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_{prefix}_eficiencia.png", bbox_inches="tight")
@@ -272,7 +268,7 @@ def plot_schedule_suite(rows, prefix, subfolder, title_suffix, is_desbal=False):
             st = STYLE_SCHED[s]
             ax.plot(xs, ys, label=st["label"], color=st["color"], marker=st["marker"], lw=1.3, markersize=6)
 
-    ax.axhline(1.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 1")
+    ax.plot([], [], color="none", label="Ideal: 1")
     ax.set_xticks(range(len(x_labels)))
     ax.set_xticklabels(x_labels)
     ax.set_xlabel("Tamanho do chunk", fontsize=11)
@@ -372,7 +368,7 @@ def plot_strong_scaling(rows):
     # 2. Speedup
     fig, ax = plt.subplots(figsize=(6.2, 4.2))
     ax.plot(threads, speedups, label="Paralelo - dynamic,1", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.plot(threads, threads, label="Ideal: $S(n,p) = p$", color="#d62728", linestyle="--", lw=1.2)
+    ax.plot([], [], color="none", label="Ideal: $S(n,p) = p$")
     ax.set_xticks(threads)
     ax.set_xlabel("Número de threads", fontsize=11)
     ax.set_ylabel("Speedup", fontsize=11)
@@ -386,12 +382,12 @@ def plot_strong_scaling(rows):
     # 3. Eficiencia
     fig, ax = plt.subplots(figsize=(6.2, 4.2))
     ax.plot(threads, efics, label="Paralelo - dynamic,1", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.axhline(100.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 100%")
+    ax.plot([], [], color="none", label="Ideal: 100%")
     ax.set_xticks(threads)
     ax.set_xlabel("Número de threads", fontsize=11)
     ax.set_ylabel("Eficiência paralela (%)", fontsize=11)
     ax.set_title("Escalabilidade Forte - Eficiência", fontweight="bold", fontsize=11.5, pad=10)
-    ax.set_ylim(0, 108)
+    ax.set_ylim(bottom=0)
     ax.grid(True)
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=2, edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_forte_eficiencia.png", bbox_inches="tight")
@@ -400,7 +396,7 @@ def plot_strong_scaling(rows):
     # 4. Fator de Balanceamento
     fig, ax = plt.subplots(figsize=(6.2, 4.2))
     ax.plot(threads, fatores, label="Paralelo - dynamic,1", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.axhline(1.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 1")
+    ax.plot([], [], color="none", label="Ideal: 1")
     ax.set_xticks(threads)
     ax.set_xlabel("Número de threads", fontsize=11)
     ax.set_ylabel("Fator de balanceamento", fontsize=11)
@@ -472,7 +468,6 @@ def plot_weak_scaling(rows):
 
     labels = [f"{r['resolucao']} / {r['threads']}" for r in rows]
     xs = list(range(len(labels)))
-    threads = [int(r["threads"]) for r in rows]
     t_sers = [float(r["tempo_serial"]) for r in rows]
     t_pars = [float(r["tempo_paralelo"]) for r in rows]
     speedups = [float(r["speedup"]) for r in rows]
@@ -510,7 +505,7 @@ def plot_weak_scaling(rows):
     # 3. Speedup
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
     ax.plot(xs, speedups, label="Paralelo - dynamic,1", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.plot(xs, threads, label="Ideal: $S(n,p) = p$", color="#d62728", linestyle="--", lw=1.2)
+    ax.plot([], [], color="none", label="Ideal: $S(n,p) = p$")
     ax.set_xticks(xs)
     ax.set_xticklabels(labels, rotation=40, ha="right")
     ax.set_xlabel("Resolução / Número de threads", fontsize=11)
@@ -525,13 +520,13 @@ def plot_weak_scaling(rows):
     # 4. Eficiencia
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
     ax.plot(xs, efics, label="Paralelo - dynamic,1", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.axhline(100.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 100%")
+    ax.plot([], [], color="none", label="Ideal: 100%")
     ax.set_xticks(xs)
     ax.set_xticklabels(labels, rotation=40, ha="right")
     ax.set_xlabel("Resolução / Número de threads", fontsize=11)
     ax.set_ylabel("Eficiência paralela (%)", fontsize=11)
     ax.set_title("Escalabilidade Fraca - Eficiência", fontweight="bold", fontsize=11.5, pad=10)
-    ax.set_ylim(0, 108)
+    ax.set_ylim(bottom=0)
     ax.grid(True)
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.24), ncol=2, edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_fraca_eficiencia.png", bbox_inches="tight")
@@ -540,7 +535,7 @@ def plot_weak_scaling(rows):
     # 5. Fator de Balanceamento
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
     ax.plot(xs, fatores, label="Paralelo - dynamic,1", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.axhline(1.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 1")
+    ax.plot([], [], color="none", label="Ideal: 1")
     ax.set_xticks(xs)
     ax.set_xticklabels(labels, rotation=40, ha="right")
     ax.set_xlabel("Resolução / Número de threads", fontsize=11)

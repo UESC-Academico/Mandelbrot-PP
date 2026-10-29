@@ -195,8 +195,7 @@ def plot_strategy_chunk_suite(rows, prefix, subfolder, title_suffix, is_desbal=F
             st = STYLE_STRAT[s]
             ax.plot(xs, ys, label=st["label"], color=st["color"], marker=st["marker"], lw=1.3, markersize=6)
 
-    if not is_desbal:
-        ax.axhline(procs, color="#d62728", linestyle="--", lw=1.2, label=f"Ideal: {procs}")
+    ax.plot([], [], color="none", label=f"Ideal: {procs}")
     ax.set_xticks(range(len(x_labels)))
     ax.set_xticklabels(x_labels)
     ax.set_xlabel("Tamanho do chunk", fontsize=11)
@@ -218,13 +217,13 @@ def plot_strategy_chunk_suite(rows, prefix, subfolder, title_suffix, is_desbal=F
             st = STYLE_STRAT[s]
             ax.plot(xs, ys, label=st["label"], color=st["color"], marker=st["marker"], lw=1.3, markersize=6)
 
-    ax.axhline(100.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 100%")
+    ax.plot([], [], color="none", label="Ideal: 100%")
     ax.set_xticks(range(len(x_labels)))
     ax.set_xticklabels(x_labels)
     ax.set_xlabel("Tamanho do chunk", fontsize=11)
     ax.set_ylabel("Eficiência paralela (%)", fontsize=11)
     ax.set_title(f"Eficiência - {title_suffix} ({procs} processos)", fontweight="bold", fontsize=11.5, pad=10)
-    ax.set_ylim(0, 105)
+    ax.set_ylim(bottom=0)
     ax.grid(True)
     ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_{prefix}_eficiencia.png", bbox_inches="tight")
@@ -240,13 +239,13 @@ def plot_strategy_chunk_suite(rows, prefix, subfolder, title_suffix, is_desbal=F
             st = STYLE_STRAT[s]
             ax.plot(xs, ys, label=st["label"], color=st["color"], marker=st["marker"], lw=1.3, markersize=6)
 
-    ax.axhline(0.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 0")
+    ax.plot([], [], color="none", label="Ideal: 0")
     ax.set_xticks(range(len(x_labels)))
     ax.set_xticklabels(x_labels)
     ax.set_xlabel("Tamanho do chunk", fontsize=11)
     ax.set_ylabel("FBC $(T_{max} - T_{min}) / T_{max}$", fontsize=11)
     ax.set_title(f"Fator de Balanceamento (FBC) - {title_suffix}", fontweight="bold", fontsize=11.5, pad=10)
-    ax.set_ylim(-0.05, 1.05)
+    ax.set_ylim(bottom=0)
     ax.grid(True)
     ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_{prefix}_fbc.png", bbox_inches="tight")
@@ -363,7 +362,7 @@ def plot_strong_scaling(rows):
             sp = [float(r["speedup"]) for r in pts]
             st = STYLE_STRAT[s]
             ax.plot(ps, sp, label=st["label"], color=st["color"], marker=st["marker"], lw=1.3, markersize=6)
-    ax.plot(all_procs, all_procs, label="Ideal: $S(n,p) = p$", color="#d62728", linestyle="--", lw=1.2)
+    ax.plot([], [], color="none", label="Ideal: $S(n,p) = p$")
     ax.set_xticks(all_procs)
     ax.set_xlabel("Número de processos MPI", fontsize=11)
     ax.set_ylabel("Speedup", fontsize=11)
@@ -383,12 +382,12 @@ def plot_strong_scaling(rows):
             ef = [float(r["eficiencia"]) for r in pts]
             st = STYLE_STRAT[s]
             ax.plot(ps, ef, label=st["label"], color=st["color"], marker=st["marker"], lw=1.3, markersize=6)
-    ax.axhline(100.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 100%")
+    ax.plot([], [], color="none", label="Ideal: 100%")
     ax.set_xticks(all_procs)
     ax.set_xlabel("Número de processos MPI", fontsize=11)
     ax.set_ylabel("Eficiência paralela (%)", fontsize=11)
     ax.set_title("Escalabilidade Forte - Eficiência", fontweight="bold", fontsize=11.5, pad=10)
-    ax.set_ylim(0, 108)
+    ax.set_ylim(bottom=0)
     ax.grid(True)
     ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_forte_eficiencia.png", bbox_inches="tight")
@@ -403,12 +402,12 @@ def plot_strong_scaling(rows):
             fb = [float(r["fbc"]) for r in pts]
             st = STYLE_STRAT[s]
             ax.plot(ps, fb, label=st["label"], color=st["color"], marker=st["marker"], lw=1.3, markersize=6)
-    ax.axhline(0.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 0")
+    ax.plot([], [], color="none", label="Ideal: 0")
     ax.set_xticks(all_procs)
     ax.set_xlabel("Número de processos MPI", fontsize=11)
     ax.set_ylabel("FBC $(T_{max} - T_{min}) / T_{max}$", fontsize=11)
     ax.set_title("Escalabilidade Forte - Fator de Balanceamento (FBC)", fontweight="bold", fontsize=11.5, pad=10)
-    ax.set_ylim(-0.05, 1.05)
+    ax.set_ylim(bottom=0)
     ax.grid(True)
     ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_forte_fbc.png", bbox_inches="tight")
@@ -466,7 +465,6 @@ def plot_weak_scaling(rows):
 
     labels = [f"{r['resolucao']} / {r['processes']}" for r in rows]
     xs = list(range(len(labels)))
-    procs = [int(r["processes"]) for r in rows]
     t_pars = [float(r["tempo_paralelo"]) for r in rows]
     speedups = [float(r["speedup"]) for r in rows]
     efics = [float(r["eficiencia"]) for r in rows]
@@ -489,7 +487,7 @@ def plot_weak_scaling(rows):
     # 2. Speedup
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
     ax.plot(xs, speedups, label="MPI - dynamic,1", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.plot(xs, procs, label="Ideal: $S(n,p) = p$", color="#d62728", linestyle="--", lw=1.2)
+    ax.plot([], [], color="none", label="Ideal: $S(n,p) = p$")
     ax.set_xticks(xs)
     ax.set_xticklabels(labels, rotation=40, ha="right")
     ax.set_xlabel("Resolução / Número de processos", fontsize=11)
@@ -504,13 +502,13 @@ def plot_weak_scaling(rows):
     # 3. Eficiencia
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
     ax.plot(xs, efics, label="MPI - dynamic,1", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.axhline(100.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 100%")
+    ax.plot([], [], color="none", label="Ideal: 100%")
     ax.set_xticks(xs)
     ax.set_xticklabels(labels, rotation=40, ha="right")
     ax.set_xlabel("Resolução / Número de processos", fontsize=11)
     ax.set_ylabel("Eficiência paralela (%)", fontsize=11)
     ax.set_title("Escalabilidade Fraca - Eficiência", fontweight="bold", fontsize=11.5, pad=10)
-    ax.set_ylim(0, 108)
+    ax.set_ylim(bottom=0)
     ax.grid(True)
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.24), ncol=2, edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_fraca_eficiencia.png", bbox_inches="tight")
@@ -519,13 +517,13 @@ def plot_weak_scaling(rows):
     # 4. FBC
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
     ax.plot(xs, fbcs, label="MPI - dynamic,1", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.axhline(0.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 0")
+    ax.plot([], [], color="none", label="Ideal: 0")
     ax.set_xticks(xs)
     ax.set_xticklabels(labels, rotation=40, ha="right")
     ax.set_xlabel("Resolução / Número de processos", fontsize=11)
     ax.set_ylabel("FBC $(T_{max} - T_{min}) / T_{max}$", fontsize=11)
     ax.set_title("Escalabilidade Fraca - Fator de Balanceamento (FBC)", fontweight="bold", fontsize=11.5, pad=10)
-    ax.set_ylim(-0.02, 0.5)
+    ax.set_ylim(bottom=0)
     ax.grid(True)
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.24), ncol=2, edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_fraca_fbc.png", bbox_inches="tight")
@@ -605,7 +603,7 @@ def plot_comparison_openmp_mpi(rows_cmp, rows_strong):
     if has_cyc:
         ax.plot(units, s_mpi_cyc, label="MPI (cyclic,1)", color="#ff7f0e", marker="^", lw=1.3, markersize=6)
     ax.plot(units, s_mpi_dyn, label="MPI (dynamic,1)", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.plot(units, units, label="Ideal: $S(n,p) = p$", color="#d62728", linestyle="--", lw=1.2)
+    ax.plot([], [], color="none", label="Ideal: $S(n,p) = p$")
     ax.set_xticks(units)
     ax.set_xlabel("Número de threads / processos", fontsize=11)
     ax.set_ylabel("Speedup", fontsize=11)
@@ -622,12 +620,12 @@ def plot_comparison_openmp_mpi(rows_cmp, rows_strong):
     if has_cyc:
         ax.plot(units, e_mpi_cyc, label="MPI (cyclic,1)", color="#ff7f0e", marker="^", lw=1.3, markersize=6)
     ax.plot(units, e_mpi_dyn, label="MPI (dynamic,1)", color="#2ca02c", marker="s", lw=1.3, markersize=6)
-    ax.axhline(100.0, color="#d62728", linestyle="--", lw=1.2, label="Ideal: 100%")
+    ax.plot([], [], color="none", label="Ideal: 100%")
     ax.set_xticks(units)
     ax.set_xlabel("Número de threads / processos", fontsize=11)
     ax.set_ylabel("Eficiência paralela (%)", fontsize=11)
     ax.set_title("Comparação OpenMP vs. MPI - Eficiência", fontweight="bold", fontsize=11.5, pad=10)
-    ax.set_ylim(0, 108)
+    ax.set_ylim(bottom=0)
     ax.grid(True)
     ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", edgecolor="black", fancybox=False)
     plt.savefig(f"{out_graph_dir}/fig_comp_eficiencia.png", bbox_inches="tight")
