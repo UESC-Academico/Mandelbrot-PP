@@ -4,16 +4,48 @@ import filecmp
 import math
 import os
 import re
+import statistics
 import subprocess
 import sys
 
 RESULTS_DIR = "Results/MPI/CSV"
 OPENMP_CSV_DIR = "Results/OpenMP/CSV"
+DEFAULT_REPEATS = 5
+
+
+def get_cli_config():
+    repeats = DEFAULT_REPEATS
+    stat_mode = "mean" if "--mean" in sys.argv else "median"
+    for arg in sys.argv[1:]:
+        if arg.startswith("--repeats="):
+            repeats = max(1, int(arg.split("=", 1)[1]))
+    return repeats, stat_mode
 
 
 def parse_time(output):
     match = re.search(r"Tempo de execucao:\s*([0-9.]+)", output)
     return float(match.group(1)) if match else 0.0
+
+
+def aggregate_rows(runs, stat_mode="median"):
+    if not runs:
+        return {}
+    if len(runs) == 1:
+        return runs[0]
+    if stat_mode == "median":
+        sorted_runs = sorted(runs, key=lambda r: float(r["total_time"]))
+        return sorted_runs[len(sorted_runs) // 2]
+
+    agg = dict(runs[0])
+    num_keys = [
+        "total_time", "comm_time", "master_time", "io_time",
+        "time_max", "time_min", "time_avg", "time_max_avg", "time_fbc",
+    ]
+    for k in num_keys:
+        if k in agg:
+            vals = [float(r[k]) for r in runs]
+            agg[k] = f"{statistics.mean(vals):.6f}"
+    return agg
 
 
 def detect_mpirun_flags():
@@ -54,47 +86,75 @@ def verify_matrices(serial_bin, mpi_bin):
     return is_valid, pct_diff, max_diff
 
 
-def run_serial(width=4096, mode="normal", skip_io=True, skip_ppm=True):
-    env = os.environ.copy()
-    if skip_io:
-        env["SKIP_IO"] = "1"
-    elif skip_ppm:
-        env["SKIP_PPM"] = "1"
-
+def run_serial(width=4096, mode="normal", skip_io=True, skip_ppm=True, repeats=DEFAULT_REPEATS, stat_mode="median"):
     cmd = ["./mandelbrot_sequencial", str(width)]
     if mode == "desbalanceamento":
         cmd.append("desbalanceamento")
 
-    res = subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
-    return parse_time(res.stdout)
+    times = []
+    for i in range(repeats):
+        env = os.environ.copy()
+        if skip_io or i > 0:
+            env["SKIP_IO"] = "1"
+        elif skip_ppm:
+            env["SKIP_PPM"] = "1"
+
+        res = subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
+        times.append(parse_time(res.stdout))
+
+    return statistics.mean(times) if stat_mode == "mean" else statistics.median(times)
 
 
-def run_mpi(mpirun_flags, width=4096, mode="normal", nprocs=4, strategy="block", chunk=1, skip_io=True, skip_ppm=True):
-    env = os.environ.copy()
-    env["OMPI_MCA_rmaps_base_oversubscribe"] = "1"
-    if skip_io:
-        env["SKIP_IO"] = "1"
-    elif skip_ppm:
-        env["SKIP_PPM"] = "1"
-
-    if strategy == "block" or chunk is None or chunk == 0:
-        env["MPI_SCHEDULE"] = strategy
-    else:
-        env["MPI_SCHEDULE"] = f"{strategy},{chunk}"
-
+def run_mpi(
+    mpirun_flags,
+    width=4096,
+    mode="normal",
+    nprocs=4,
+    strategy="block",
+    chunk=1,
+    skip_io=True,
+    skip_ppm=True,
+    repeats=DEFAULT_REPEATS,
+    stat_mode="median",
+):
     cmd = ["mpirun"] + mpirun_flags + ["-np", str(nprocs), "./mandelbrot_mpi", str(width)]
     if mode == "desbalanceamento":
         cmd.append("desbalanceamento")
 
-    res = subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
+    runs = []
+    csv_path = None
+    fieldnames = None
 
-    match = re.search(r"Estatisticas salvas em:\s*(.+\.csv)", res.stdout)
-    csv_path = match.group(1).strip() if match else None
-    if csv_path and os.path.exists(csv_path):
-        with open(csv_path, "r", newline="") as f:
-            reader = csv.DictReader(f)
-            return next(reader)
-    return {}
+    for i in range(repeats):
+        env = os.environ.copy()
+        env["OMPI_MCA_rmaps_base_oversubscribe"] = "1"
+        if skip_io or i > 0:
+            env["SKIP_IO"] = "1"
+        elif skip_ppm:
+            env["SKIP_PPM"] = "1"
+
+        if strategy == "block" or chunk is None or chunk == 0:
+            env["MPI_SCHEDULE"] = strategy
+        else:
+            env["MPI_SCHEDULE"] = f"{strategy},{chunk}"
+
+        res = subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
+
+        match = re.search(r"Estatisticas salvas em:\s*(.+\.csv)", res.stdout)
+        csv_path = match.group(1).strip() if match else None
+        if csv_path and os.path.exists(csv_path):
+            with open(csv_path, "r", newline="") as f:
+                reader = csv.DictReader(f)
+                fieldnames = reader.fieldnames
+                runs.append(next(reader))
+
+    chosen = aggregate_rows(runs, stat_mode=stat_mode)
+    if csv_path and fieldnames and chosen and len(runs) > 1:
+        with open(csv_path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerow(chosen)
+    return chosen
 
 
 def load_cached_serial_times():
@@ -110,6 +170,9 @@ def load_cached_serial_times():
 def main():
     os.makedirs(RESULTS_DIR, exist_ok=True)
     mpirun_flags = detect_mpirun_flags()
+    repeats, stat_mode = get_cli_config()
+    stat_label = "media" if stat_mode == "mean" else "mediana"
+    print(f"Configuracao de benchmark: {repeats} repeticoes por teste (estatistica: {stat_label})")
 
     max_procs = os.cpu_count() or 4
     proc_list = [p for p in [1, 2, 4, 6, 8, 12, 16] if p <= max_procs]
@@ -126,13 +189,16 @@ def main():
 
     # 1. Teste de Corretude (nas 3 estrategias) e Caso Base Serial
     print("\n=== 1. TESTE DE CORRETUDE E CASO BASE SERIAL (4096x4096) ===")
-    t_serial_normal = run_serial(4096, "normal", skip_io=False, skip_ppm=True)
-    print(f"Tempo Serial (Normal 4096): {t_serial_normal:.6f} s")
+    t_serial_normal = run_serial(4096, "normal", skip_io=False, skip_ppm=True, repeats=repeats, stat_mode=stat_mode)
+    print(f"Tempo Serial (Normal 4096, {stat_label} de {repeats}x): {t_serial_normal:.6f} s")
 
     io_time_ref = 0.0
     for idx, strat in enumerate(["block", "cyclic", "dynamic"]):
         # Na primeira estrategia salva o .bin + .ppm para medir o tempo completo de I/O; nas demais salva o .bin para o cmp
-        row_c = run_mpi(mpirun_flags, 4096, "normal", nprocs=max_procs, strategy=strat, chunk=1, skip_io=False, skip_ppm=(idx > 0))
+        row_c = run_mpi(
+            mpirun_flags, 4096, "normal", nprocs=max_procs, strategy=strat, chunk=1,
+            skip_io=False, skip_ppm=(idx > 0), repeats=1, stat_mode=stat_mode
+        )
         if idx == 0:
             io_time_ref = float(row_c.get("io_time", 0.0))
         ok, pct_diff, max_diff = verify_matrices("mandelbrot_matriz.bin", "mandelbrot_mpi_matriz.bin")
@@ -150,7 +216,7 @@ def main():
             "tempo_serial", "speedup", "eficiencia", "time_min", "time_avg", "time_max", "fbc", "fator_max_avg"
         ])
         for strat, ch in configs:
-            row = run_mpi(mpirun_flags, 4096, "normal", nprocs=max_procs, strategy=strat, chunk=ch)
+            row = run_mpi(mpirun_flags, 4096, "normal", nprocs=max_procs, strategy=strat, chunk=ch, repeats=repeats, stat_mode=stat_mode)
             t = float(row["total_time"])
             t_comm = float(row["comm_time"])
             t_mast = float(row["master_time"])
@@ -182,7 +248,7 @@ def main():
         for strat, ch in [("block", 0), ("cyclic", 1), ("dynamic", 1)]:
             ch_label = "padrao" if ch == 0 else str(ch)
             for np_val in proc_list:
-                row = run_mpi(mpirun_flags, 4096, "normal", nprocs=np_val, strategy=strat, chunk=ch)
+                row = run_mpi(mpirun_flags, 4096, "normal", nprocs=np_val, strategy=strat, chunk=ch, repeats=repeats, stat_mode=stat_mode)
                 t = float(row["total_time"])
                 t_comm = float(row["comm_time"])
                 t_mast = float(row["master_time"])
@@ -204,8 +270,8 @@ def main():
 
     # 4. Caso de Desbalanceamento (4096x4096, MAX_ITER=5000, max_procs processos)
     print(f"\n=== 4. CASO DE DESBALANCEAMENTO (4096x4096, MAX_ITER=5000, {max_procs} processos) ===")
-    t_serial_desbal = run_serial(4096, "desbalanceamento")
-    print(f"Tempo Serial (Desbalanceamento 4096): {t_serial_desbal:.6f} s")
+    t_serial_desbal = run_serial(4096, "desbalanceamento", repeats=repeats, stat_mode=stat_mode)
+    print(f"Tempo Serial (Desbalanceamento 4096, {stat_label} de {repeats}x): {t_serial_desbal:.6f} s")
     print(f"{'Strategy':<10} {'Chunk':<8} {'Tempo (s)':>11} {'Comm (s)':>10} {'Mestre (s)':>11} {'Speedup':>9} {'Efic.(%)':>10} {'FBC':>10} {'Fator(max/avg)':>15}")
     with open(f"{RESULTS_DIR}/resumo_desbalanceamento.csv", "w", newline="") as f_out:
         writer = csv.writer(f_out)
@@ -214,7 +280,7 @@ def main():
             "tempo_serial", "speedup", "eficiencia", "time_min", "time_avg", "time_max", "fbc", "fator_max_avg"
         ])
         for strat, ch in configs:
-            row = run_mpi(mpirun_flags, 4096, "desbalanceamento", nprocs=max_procs, strategy=strat, chunk=ch)
+            row = run_mpi(mpirun_flags, 4096, "desbalanceamento", nprocs=max_procs, strategy=strat, chunk=ch, repeats=repeats, stat_mode=stat_mode)
             t = float(row["total_time"])
             t_comm = float(row["comm_time"])
             t_mast = float(row["master_time"])
@@ -251,9 +317,9 @@ def main():
                 elif res_w in cached_serial:
                     t_ser = cached_serial[res_w]
                 else:
-                    t_ser = run_serial(res_w, "normal")
+                    t_ser = run_serial(res_w, "normal", repeats=repeats, stat_mode=stat_mode)
 
-                row = run_mpi(mpirun_flags, res_w, "normal", nprocs=np_val, strategy="dynamic", chunk=1)
+                row = run_mpi(mpirun_flags, res_w, "normal", nprocs=np_val, strategy="dynamic", chunk=1, repeats=repeats, stat_mode=stat_mode)
                 t_par = float(row["total_time"])
                 t_comm = float(row["comm_time"])
                 t_mast = float(row["master_time"])
